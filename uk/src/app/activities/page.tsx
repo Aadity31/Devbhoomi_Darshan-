@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { StarIcon, ClockIcon, MapPinIcon, CurrencyRupeeIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/solid';
+import { StarIcon, ClockIcon, MapPinIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/solid';
 import type { Activity, SearchFilters } from '../types';
 
 // Mock data
@@ -103,9 +103,11 @@ export default function ActivitiesPage() {
     });
   }, [filters]);
 
-  const updateFilter = (key: keyof SearchFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  // safer updateFilter to satisfy TS when merging partials into SearchFilters
+  const updateFilter = <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => {
+    setFilters(prev => ({ ...(prev as object), [key]: value } as SearchFilters));
   };
+
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -139,7 +141,7 @@ export default function ActivitiesPage() {
           <div className="hidden lg:flex items-center gap-4 flex-wrap">
             <select
               value={filters.activityType || ''}
-              onChange={(e) => updateFilter('activityType', e.target.value || undefined)}
+              onChange={(e) => updateFilter('activityType', (e.target.value as SearchFilters['activityType']) || undefined)}
               className="border border-gray-300 rounded-lg px-3 py-2"
             >
               {activityTypes.map(type => (
@@ -149,7 +151,7 @@ export default function ActivitiesPage() {
 
             <select
               value={filters.difficulty || ''}
-              onChange={(e) => updateFilter('difficulty', e.target.value || undefined)}
+              onChange={(e) => updateFilter('difficulty', (e.target.value as SearchFilters['difficulty']) || undefined)}
               className="border border-gray-300 rounded-lg px-3 py-2"
             >
               {difficultyLevels.map(level => (
@@ -161,12 +163,12 @@ export default function ActivitiesPage() {
               type="text"
               placeholder="Location..."
               value={filters.location || ''}
-              onChange={(e) => updateFilter('location', e.target.value || undefined)}
+              onChange={(e) => updateFilter('location', (e.target.value as SearchFilters['location']) || undefined)}
               className="border border-gray-300 rounded-lg px-3 py-2"
             />
 
             <select
-              value={filters.rating || ''}
+              value={filters.rating?.toString() ?? ''}
               onChange={(e) => updateFilter('rating', e.target.value ? Number(e.target.value) : undefined)}
               className="border border-gray-300 rounded-lg px-3 py-2"
             >
@@ -182,7 +184,7 @@ export default function ActivitiesPage() {
             <div className="lg:hidden bg-white border border-gray-300 rounded-lg p-4 space-y-4">
               <select
                 value={filters.activityType || ''}
-                onChange={(e) => updateFilter('activityType', e.target.value || undefined)}
+                onChange={(e) => updateFilter('activityType', (e.target.value as SearchFilters['activityType']) || undefined)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
               >
                 {activityTypes.map(type => (
@@ -209,13 +211,12 @@ export default function ActivitiesPage() {
                   className="object-cover"
                 />
                 <div className="absolute top-3 left-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${
-                    activity.type === 'adventure' ? 'bg-red-500' :
-                    activity.type === 'spiritual' ? 'bg-purple-500' :
-                    activity.type === 'cultural' ? 'bg-blue-500' :
-                    'bg-green-500'
-                  }`}>
-                    {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${activity.type === 'adventure' ? 'bg-red-500' :
+                      activity.type === 'spiritual' ? 'bg-purple-500' :
+                        activity.type === 'cultural' ? 'bg-blue-500' :
+                          'bg-green-500'
+                    }`}>
+                    {activity.type ? activity.type.charAt(0).toUpperCase() + activity.type.slice(1) : ''}
                   </span>
                 </div>
                 <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
@@ -244,9 +245,9 @@ export default function ActivitiesPage() {
                     {activity.duration}
                   </div>
                   <div className="flex items-center gap-1 text-lg font-bold text-orange-600">
-                    <CurrencyRupeeIcon className="w-4 h-4" />
-                    {activity.price.min === activity.price.max 
-                      ? activity.price.min 
+                    <span className="text-base">₹</span>
+                    {activity.price.min === activity.price.max
+                      ? activity.price.min
                       : `${activity.price.min} - ${activity.price.max}`}
                   </div>
                 </div>
